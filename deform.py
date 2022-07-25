@@ -61,6 +61,10 @@ grad_norm_N_Q8  = lambda xi, eta:\
 D_plainstress = lambda E,nu:  E/(1-nu**2)*np.matrix([[1, nu, 0],[nu,1,0],[0,0,(1-nu)/2]]);
 D_plainstrain = lambda E,nu:  E/((1+nu)*(1-2*nu))*np.matrix([[1-nu, nu, 0],[nu,1-nu,0],[0,0,(1-2*nu)/2]]);
 
+#nearly equalの定義
+nearly_equal = lambda a,b: abs(a - b) <= sys.float_info.epsilon * max(abs(a), abs(b));
+
+
 def readSfile(filename, points):
     """
     各種応力（と角度）のｐｌｔファイルを読み込む
@@ -254,11 +258,16 @@ def deformplot(fig, ax, nodal_point_coordinates, element_connectivities, toColor
     # 色付けの最小値と最大値を与えられた物理量の最小値と最大値に設定する
     colmin = min(l[1] for l in toColor)
     colmax = max(l[1] for l in toColor)
+    if(nearly_equal(colmin, colmax)):
+        colmin = colmin-1;
+        colmax = colmax+1;
     colorv = np.linspace(colmin, colmax, 100, endpoint=True) #カラーバーの色の刻み．100を小さくすると荒くなる
     
     # 色付きの面の描画
+    
     tcf = ax.tricontourf(x, y, triangles, v, colorv, cmap='jet', norm=Normalize(vmin=colmin, vmax=colmax))
     clb = fig.colorbar(tcf, ax=ax) # カラーバーの表示
+    
     
     # 要素の輪郭線の描画
     if(draw_outline):
@@ -373,9 +382,14 @@ def make_outerframe(nodal_point_coordinates, element_connectivities, xis):
     return outerframe_lines
 
 def deformplotbytruestress(fig, ax, trixlist, triylist, trinodelist, trivlist, outerframe_lines, title, unit = "[MPa]"):
+    
     colmin = min(trivlist); colmin *= 0.999 if colmin > 0 else 1.001;
     colmax = max(trivlist); colmax *= 1.001 if colmax > 0 else 0.999;
+    if(nearly_equal(colmin, colmax)):
+        colmin = colmin-1;
+        colmax = colmax+1;
     colorv = np.linspace(colmin, colmax, 100, endpoint=True) #カラーバーの色の刻み．100を小さくすると荒くなる
+    
     tcf = ax.tricontourf(trixlist, triylist, trinodelist, trivlist, colorv, cmap='jet')
     # tcf = ax.tricontourf(trixlist, triylist, trinodelist, trivlist, colorv, cmap='jet', norm=Normalize(vmin=colmin, vmax=colmax))
     clb = fig.colorbar(tcf, ax=ax) # カラーバーの表示
